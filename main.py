@@ -78,6 +78,8 @@ available_tools = {
   'read_file': file_tools.read_file_tool,
 }
 
+turn_failed = False
+
 while True:
 
     user_request = input("Ask a question. Type 'exit' to quit: ")
@@ -110,7 +112,7 @@ while True:
                         output = {'ok': False, 'error': str(e)}
                     else:
                         print("Arguments are valid.")
-                        output = function_to_call(**tool.function.arguments)
+                        output = function_to_call(root_dir=root_dir, **tool.function.arguments)
                 else:
                     print(f'Function {tool.function.name} not found')
                     output = 'Function not found'
@@ -122,14 +124,20 @@ while True:
             try:
                 response = client.chat(model=model, messages=messages, stream=False, tools=available_tools.values())
             except ResponseError as e:
+                    turn_failed = True
                     print('Error:', e.error) 
                     break
             except ConnectionError as e:
+                    turn_failed = True
                     print('Connection Error:', str(e))  
                     break
 
+        if turn_failed:
+            turn_failed = False
+            continue
         if step_count >= STEP_LIMIT and response.message.tool_calls:
             print(f"Step limit of {STEP_LIMIT} reached. Stopping further tool calls.")
+            continue
 
         messages.append(response.message)  # Add the model's response to the conversation
 
@@ -143,4 +151,3 @@ while True:
         print('Connection Error:', str(e))           
 
     
-
