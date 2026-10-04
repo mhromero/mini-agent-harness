@@ -16,18 +16,29 @@ if model == "" or model is None:
 
 client = Client(host='https://ollama.com', headers={'Authorization': 'Bearer ' + api_key})
 
-user_request = input("Ask a question: ")
+messages = []
 
-messages = [
-  {
-    'role': 'user',
-    'content': user_request,
-  },
-]
+def create_message(content, role='user'):
+    m ={
+        'role': role,
+        'content': content,
+    }
+    return m
 
-response = client.chat(model=model, messages=messages, stream=False)
+while True:
 
-# api request failure or successs
-print(response)
-print("---"*4)
-print(response.message.content)
+    user_request = input("Ask a question. Type 'exit' to quit: ")
+    if user_request.lower() == 'exit':
+        break
+
+    m = create_message(user_request)
+    messages.append(m)
+
+    response = client.chat(model=model, messages=messages, stream=False)
+    # TODO: Handle API request failure or success
+    chat_response = create_message(response.message.content, role='assistant')
+    messages.append(chat_response)
+
+    print(response.message.content)
+
+
