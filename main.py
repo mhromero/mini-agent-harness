@@ -85,6 +85,10 @@ while True:
     user_request = input("Ask a question. Type 'exit' to quit: ")
     if user_request.lower() == 'exit':
         break
+    if user_request.lower() == '/reset':
+        messages.clear()
+        print('Conversation history cleared.')
+        continue
 
     m = create_message(user_request, role=USER)
     messages.append(m)
