@@ -1,8 +1,11 @@
 import os
 import sys
 
-from ollama import Client
+from ollama import Client, ResponseError
 from dotenv import load_dotenv
+
+USER = 'user'
+ASSISTANT = 'assistant'
 
 load_dotenv()
 
@@ -18,7 +21,7 @@ client = Client(host='https://ollama.com', headers={'Authorization': 'Bearer ' +
 
 messages = []
 
-def create_message(content, role='user'):
+def create_message(content, role):
     m ={
         'role': role,
         'content': content,
@@ -31,14 +34,23 @@ while True:
     if user_request.lower() == 'exit':
         break
 
-    m = create_message(user_request)
+    m = create_message(user_request, role=USER)
     messages.append(m)
 
-    response = client.chat(model=model, messages=messages, stream=False)
-    # TODO: Handle API request failure or success
-    chat_response = create_message(response.message.content, role='assistant')
-    messages.append(chat_response)
+    try:
+        response = client.chat(model=model, messages=messages, stream=False)
 
-    print(response.message.content)
+        chat_response = create_message(response.message.content, role=ASSISTANT)
+        messages.append(chat_response)
+
+        print(response.message.content)
+    except ResponseError as e:
+        messages.pop()  # Remove the last user message if the request fails
+        print('Error:', e.error) 
+    except ConnectionError as e:
+        messages.pop()  # Remove the last user message if the request fails
+        print('Connection Error:', str(e))           
+
+    
 
 
