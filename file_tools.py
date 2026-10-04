@@ -23,7 +23,7 @@ read_file_tool = {
   'type': 'function',
   'function': {
     'name': 'read_file',
-    'description': 'Read the contents of a file. Encoding:UTF-8. Maximum file size: 65,536-byte. If the file is larger than 1MB, it will not be read.',
+    'description': 'Read the contents of a file. Encoding:UTF-8. Maximum file size: 65,536-byte. If the file is larger, it will not be read.',
     'parameters': {
         'type': 'object',
         'required': ['file_path'],

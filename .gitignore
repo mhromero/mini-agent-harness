@@ -2,4 +2,5 @@ api-key.txt
 .env
 .venv
 .python-version
+__pycache__/*
 

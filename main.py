@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -24,6 +25,12 @@ model = os.environ.get('MODEL')
 if model == "" or model is None:
     sys.exit("Error: MODEL is missing.")
 
+root_dir = os.environ.get('ROOT_DIR')
+if root_dir == "" or root_dir is None:
+    sys.exit("Error: ROOT_DIR is missing.")
+if not os.path.isdir(root_dir):
+    sys.exit(f"Error: ROOT_DIR '{root_dir}' is not a valid directory.")
+
 client = Client(host='https://ollama.com', headers={'Authorization': 'Bearer ' + api_key})
 
 messages = []
@@ -39,6 +46,27 @@ def create_message(content, role, tool_name=None):
         'tool_name': tool_name
     }
     return m
+
+def argument_validator(arguments, parameters):
+    if not isinstance(arguments, dict):
+        raise ValueError("Arguments must be an object.")
+
+    properties = parameters.get("properties", {})
+    missing = set(parameters.get("required", [])) - set(arguments)
+    unexpected = set(arguments) - set(properties)
+
+    if missing:
+        raise ValueError(f"Missing arguments: {sorted(missing)}")
+    if unexpected:
+        raise ValueError(f"Unexpected arguments: {sorted(unexpected)}")
+
+    python_types = {"boolean": bool, "string": str}
+    for name, value in arguments.items():
+        expected = python_types[properties[name]["type"]]
+        if not isinstance(value, expected):
+            raise ValueError(f"Argument {name} must be {expected.__name__}.")
+
+    return True 
 
 available_functions = {
   'list_files': file_tools.list_files,
@@ -73,13 +101,22 @@ while True:
                 if function_to_call := available_functions.get(tool.function.name):
                     print('Calling function:', tool.function.name)
                     print('Arguments:', tool.function.arguments)
-                    output = function_to_call(**tool.function.arguments)
+
+                    # Validate the arguments against the tool's parameters
+                    try:
+                        argument_validator(tool.function.arguments, available_tools[tool.function.name]['function']['parameters'])
+                    except ValueError as e:
+                        print(f"Error validating arguments for function {tool.function.name}: {e}")
+                        output = {'ok': False, 'error': str(e)}
+                    else:
+                        print("Arguments are valid.")
+                        output = function_to_call(**tool.function.arguments)
                 else:
                     print(f'Function {tool.function.name} not found')
                     output = 'Function not found'
 
                 # Add each tool result as a separate message
-                tool_response = create_message(str(output), role=TOOL, tool_name=tool.function.name)
+                tool_response = create_message(json.dumps(output), role=TOOL, tool_name=tool.function.name)
                 messages.append(tool_response)
 
             try:
@@ -106,5 +143,4 @@ while True:
         print('Connection Error:', str(e))           
 
     
-
 
