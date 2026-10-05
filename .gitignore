@@ -3,4 +3,4 @@ api-key.txt
 .venv
 .python-version
 __pycache__/*
-
+harness.jsonl
